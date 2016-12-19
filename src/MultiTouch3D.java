@@ -149,7 +149,6 @@ public class MultiTouch3D extends Application{
 					if(secondFingerInside) {
 					} else {
 						double dy = p1.getY() - oldp1.getY();
-						dy *= 2d;
 						box.setTranslateZ(box.getTranslateZ() - dy);
 					}
 				}
