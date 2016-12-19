@@ -28,6 +28,7 @@ import javafx.stage.Stage;
 public class MultiTouch3D extends Application{
 	BlobQueue bqueue;
 	PickResult res;
+	Point3D boxContact = null;
 	GraphicsContext gc;
 	
 	double sceneWidth = 800;
@@ -95,7 +96,14 @@ public class MultiTouch3D extends Application{
 		    		bqueue.add(p);
 			}
     		
-            res = e.getPickResult();		
+            res = e.getPickResult();	
+            
+            //when we put the first finger on the cube we register the contact point on the box
+            if(boxContact == null && e.getPickResult().getIntersectedNode() != null) {
+				Point3D p_w = box.localToParent(res.getIntersectedPoint());	
+				boxContact = new Point3D(box.getTranslateX() - p_w.getX(), box.getTranslateY() - p_w.getY(), box.getTranslateZ() - p_w.getZ());
+            }
+            
             System.out.println(res);
             if (res.getIntersectedNode() != null && res.getIntersectedNode().getId() != null) {
             	System.out.println("Le pointeur est sur le cube");
@@ -110,14 +118,18 @@ public class MultiTouch3D extends Application{
 		scene.setOnMouseDragged(e -> {
 			if (!touchscreen) {
 				Point2D p = new Point2D(e.getX(), e.getY());
-				if(res != null) {
-					Point3D p_w = box.localToParent(res.getIntersectedPoint());
-					
-		    		//ok only if the screen is on the plane XY
-		    		box.setTranslateX((p.getX() - p_w.getX()) + box.getTranslateX());
-		    		box.setTranslateY((p.getY() - p_w.getY()) + box.getTranslateY());
-				}
 	    		bqueue.update(p);
+	    		
+				if(boxContact != null) {
+					//one finger on cube
+					if(bqueue.checkId(0)) {
+						Point2D p0 = bqueue.getPoint(0); 
+						
+			    		//ok only if the screen is on the plane XY
+			    		box.setTranslateX(p0.getX() + boxContact.getX());
+			    		box.setTranslateY(p0.getY() + boxContact.getY());
+					}
+				}
 			}
         	
 
@@ -125,7 +137,9 @@ public class MultiTouch3D extends Application{
         });
         
 		scene.setOnMouseReleased(e -> {
-    		
+    		if(!bqueue.checkId(0)) {
+    			boxContact = null;
+    		}
         });
 		
 		scene.setOnTouchPressed(e -> {
