@@ -147,6 +147,16 @@ public class MultiTouch3D extends Application{
 				
 				if(p1 != null) {
 					if(secondFingerInside) {
+						Quaternion qold = new Quaternion(box.getRotationAxis(), Math.toRadians(box.getRotate()));
+						Point2D delta = new Point2D(p1.getX() - oldp1.getX(), p1.getY() - oldp1.getY());
+						
+						double t = Math.atan(delta.magnitude() / (box.getWidth() / 2d));
+						Quaternion q = new Quaternion(new Point3D(-delta.getY(), delta.getX(), 0d), -t);
+						
+						Quaternion qresult = q.multiply(qold);
+						
+						box.setRotationAxis(qresult.getAxis());
+						box.setRotate(Math.toDegrees(qresult.getAngle()));
 					} else {
 						double dy = p1.getY() - oldp1.getY();
 						box.setTranslateZ(box.getTranslateZ() - dy);
