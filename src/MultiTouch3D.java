@@ -29,6 +29,7 @@ public class MultiTouch3D extends Application{
 	BlobQueue bqueue;
 	PickResult res;
 	Point3D boxContact = null;
+	boolean secondFingerInside = false;
 	GraphicsContext gc;
 	
 	double sceneWidth = 800;
@@ -88,6 +89,9 @@ public class MultiTouch3D extends Application{
 		scene.setCamera(camera);
             		
 		scene.setOnMousePressed(e -> {
+			boolean finger0pressed = bqueue.checkId(0);
+			boolean finger1pressed = bqueue.checkId(1);
+			
 			if (!touchscreen) {
 				Point2D p = new Point2D(e.getX(), e.getY());
 				if (e.isSecondaryButtonDown()) 
@@ -95,13 +99,21 @@ public class MultiTouch3D extends Application{
 				else 
 		    		bqueue.add(p);
 			}
-    		
+
+			finger0pressed = !finger0pressed && bqueue.checkId(0);
+			finger1pressed = !finger1pressed && bqueue.checkId(1);
+			
             res = e.getPickResult();	
             
             //when we put the first finger on the cube we register the contact point on the box
-            if(boxContact == null && e.getPickResult().getIntersectedNode() != null) {
+            if(finger0pressed && e.getPickResult().getIntersectedNode() != null) {
 				Point3D p_w = box.localToParent(res.getIntersectedPoint());	
 				boxContact = new Point3D(box.getTranslateX() - p_w.getX(), box.getTranslateY() - p_w.getY(), box.getTranslateZ() - p_w.getZ());
+            }
+            
+            //check if the pressed button is nb 1
+            if(finger1pressed) {
+            	secondFingerInside = e.getPickResult().getIntersectedNode() != null;
             }
             
             System.out.println(res);
@@ -117,19 +129,31 @@ public class MultiTouch3D extends Application{
 		
 		scene.setOnMouseDragged(e -> {
 			if (!touchscreen) {
+				Point2D oldp0 = bqueue.checkId(0) ? bqueue.getPoint(0) : null;
+				Point2D oldp1 = bqueue.checkId(1) ? bqueue.getPoint(1) : null;
+				
 				Point2D p = new Point2D(e.getX(), e.getY());
 	    		bqueue.update(p);
 	    		
-				if(boxContact != null) {
-					//one finger on cube
-					if(bqueue.checkId(0)) {
-						Point2D p0 = bqueue.getPoint(0); 
-						
-			    		//ok only if the screen is on the plane XY
-			    		box.setTranslateX(p0.getX() + boxContact.getX());
-			    		box.setTranslateY(p0.getY() + boxContact.getY());
+				Point2D p0 = bqueue.checkId(0) ? bqueue.getPoint(0) : null;
+				Point2D p1 = bqueue.checkId(1) ? bqueue.getPoint(1) : null;
+	    		
+				//one finger on cube
+				if(p0 != null) {
+		    		//ok only if the screen is on the plane XY
+		    		box.setTranslateX(p0.getX() + boxContact.getX());
+		    		box.setTranslateY(p0.getY() + boxContact.getY());
+				}
+				
+				if(p1 != null) {
+					if(secondFingerInside) {
+					} else {
+						double dy = p1.getY() - oldp1.getY();
+						dy *= 2d;
+						box.setTranslateZ(box.getTranslateZ() - dy);
 					}
 				}
+				
 			}
         	
 
